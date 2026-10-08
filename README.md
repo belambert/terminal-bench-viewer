@@ -1,5 +1,9 @@
 # Terminal-Bench Viewer
 
+[![pages](https://github.com/belambert/terminal-bench-viewer/actions/workflows/pages.yml/badge.svg)](https://github.com/belambert/terminal-bench-viewer/actions/workflows/pages.yml)
+
+**Live site: https://belambert.github.io/terminal-bench-viewer/**
+
 A static, browsable website for the
 [Terminal-Bench 2.0](https://github.com/laude-institute/terminal-bench-2)
 benchmark. It turns each task directory into a web page and builds a filterable
