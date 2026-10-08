@@ -5,10 +5,15 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from harbor.auth.client import create_authenticated_client
-from harbor.hub.leaderboards import LeaderboardClient
+from harbor.hub.leaderboards import LeaderboardAPIError, LeaderboardClient
 
 PAGE = 1000
 CONCURRENCY = 8
+
+# the leaderboard read endpoint intermittently 500s on some boards (seen on
+# 2.1) until the server warms up, so server errors are retried
+RETRIES = 15
+RETRY_DELAY_SEC = 2.0
 
 
 @dataclass
@@ -32,6 +37,10 @@ class Submission:
     date: str | None
     agent_url: str | None
     model_url: str | None
+    # percentage points deducted from accuracy for trials judged reward hacks;
+    # the hub doesn't say which trials, so they still count as passes in cells
+    hacks: float = 0.0
+    hacks_url: str | None = None  # review explaining the deduction
     cells: dict[str, Cell] = field(default_factory=dict)  # task name -> cell
 
     @property
@@ -46,10 +55,8 @@ def fetch_leaderboard(package: str, name: str) -> list[Submission]:
 
 
 async def _fetch(package: str, name: str) -> list[Submission]:
-    _, page = await LeaderboardClient().list_rows(
-        package=package, name=name, page_size=PAGE
-    )
-    subs = {r.id: _submission(r.id, r.rank, r.metadata, r.metrics) for r in page.items}
+    rows = await _rows(package, name)
+    subs = {r.id: _submission(r.id, r.rank, r.metadata, r.metrics) for r in rows}
 
     client = await create_authenticated_client()
     limit = asyncio.Semaphore(CONCURRENCY)
@@ -60,6 +67,23 @@ async def _fetch(package: str, name: str) -> list[Submission]:
 
     await asyncio.gather(*(fill(s) for s in subs.values()))
     return sorted(subs.values(), key=lambda s: (s.rank or 1_000_000, -s.accuracy))
+
+
+async def _rows(package: str, name: str) -> list:
+    async def read() -> list:
+        _, page = await LeaderboardClient().list_rows(
+            package=package, name=name, page_size=PAGE
+        )
+        return page.items
+
+    for _ in range(RETRIES - 1):
+        try:
+            return await read()
+        except LeaderboardAPIError as e:
+            if (e.status or 0) < 500:
+                raise
+            await asyncio.sleep(RETRY_DELAY_SEC)
+    return await read()
 
 
 def tally(trials: list[dict]) -> dict[str, Cell]:
@@ -110,6 +134,8 @@ def _submission(id: str, rank: int | None, meta: dict, metrics: dict) -> Submiss
         date=meta.get("date"),
         agent_url=agent[1],
         model_url=model[1],
+        hacks=float(metrics.get("reward_hacks") or 0),
+        hacks_url=_display(metrics.get("display_reward_hacks"))[1],
     )
 
 

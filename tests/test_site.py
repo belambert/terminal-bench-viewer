@@ -83,10 +83,11 @@ def bench_v4(tmp_path: Path) -> Path:
     return root
 
 
-def _sub(rank: int, cells: dict[str, Cell]) -> Submission:
+def _sub(rank: int, cells: dict[str, Cell], **kw) -> Submission:
     return Submission(
-        f"id{rank}", rank, "Agent", f"Model {rank}", "high", 50.0, None, None, None,
-        cells,
+        id=f"id{rank}", rank=rank, agent="Agent", model=f"Model {rank}",
+        effort="high", accuracy=50.0, date=None, agent_url=None, model_url=None,
+        cells=cells, **kw,
     )  # fmt: skip
 
 
@@ -166,12 +167,18 @@ def test_build_site(bench: Path, tmp_path: Path):
 
 def test_build_site_with_results(bench_v4: Path, tmp_path: Path):
     out = tmp_path / "site"
-    subs = [_sub(1, {"goodbye": Cell(5, 0), "hello": Cell(5, 3)})]
+    subs = [
+        _sub(1, {"goodbye": Cell(5, 0), "hello": Cell(5, 3)}),
+        _sub(2, {"goodbye": Cell(5, 1)}, hacks=9.0, hacks_url="https://x/review"),
+    ]
     build_site([Edition(HUB, load_tasks(bench_v4), subs)], out)
 
     heat = (out / "4.0" / "results.html").read_text()
     assert heat.index("goodbye.html") < heat.index("hello.html")  # hardest first
     assert 'class="c l3"' in heat and ">3/5<" in heat
+    assert 'class="c na"' in heat  # submission 2 didn't run hello
+    assert heat.count('href="https://x/review"') == 1
+    assert "judged reward hacks (gaming the tests" in heat
 
     page = (out / "4.0" / "tasks" / "goodbye.html").read_text()
     assert "canary" not in page.split("<h2>Instruction</h2>")[1].split("</section>")[0]

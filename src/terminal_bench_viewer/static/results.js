@@ -39,7 +39,8 @@ table.addEventListener("mouseover", (e) => {
   heads[col].classList.add("hot");
   const task = td.parentElement.dataset.name;
   const result = td.textContent ? `${td.textContent} trials passed` : "not run";
-  tip.innerHTML = `<b></b><br><span></span><br>${result}`;
+  const hack = HACKS[col] ? `<br>⚑ ${HACKS[col].toFixed(1)}% of this submission's trials were judged reward hacks` : "";
+  tip.innerHTML = `<b></b><br><span></span><br>${result}${hack}`;
   tip.querySelector("b").textContent = task;
   tip.querySelector("span").textContent = SUBS[col];
   tip.hidden = false;

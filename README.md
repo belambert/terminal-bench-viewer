@@ -14,6 +14,7 @@ It currently covers:
 |---------|------------------------------------------------------------------------------------|---------------------------------------|
 | 4.0     | Harbor registry (`terminal-bench/terminal-bench@4.0.0`)                            | Harbor Hub leaderboard `4-0-0`        |
 | 3.0     | Harbor registry (`terminal-bench/terminal-bench@3.0.0`)                            | Harbor Hub leaderboard `3-0-0`        |
+| 2.1     | Harbor registry (`terminal-bench/terminal-bench-2-1@6`)                            | Harbor Hub leaderboard `main`         |
 | 2.0     | [GitHub](https://github.com/laude-institute/terminal-bench-2)                      | not yet                               |
 
 For each version the site has:
@@ -40,15 +41,26 @@ Results come from the public Harbor Hub leaderboard. Each leaderboard row
 (an agent, model, and reasoning-effort combination) lists the trials it was
 scored on; the viewer reads each trial's task and reward. A cell is the
 number of passing trials for that task, out of the trials run (5 for every
-3.0 and 4.0 submission). A trial passes if its reward is above zero: a few
+submission so far). A trial passes if its reward is above zero: a few
 tasks give partial credit, and counting those as passes is what reproduces
 the official accuracy. Errored trials have no reward and count as failures,
 as on the leaderboard. A task's solve rate is the share of passing trials
 across all submissions.
 
-These counts match the official accuracy for every 3.0 and 4.0 row except
-4.0's Claude Code · Opus 5 (max), where they come to 52.4% against an
-official 51.8%; the leaderboard figure may include a manual rescore.
+These counts match the official accuracy for every 3.0 row, every 4.0 row
+except Claude Code · Opus 5 (max) (52.4% against an official 51.8%), and
+every 2.1 row except Claude Code · Opus 4.7 (max) (one trial off), once
+reward-hack deductions are taken into account.
+
+### Reward-Hack Deductions
+
+On 2.1, reviewers flag trials where the agent gamed the tests instead of
+solving the task, and the leaderboard deducts them from the submission's
+accuracy (from 0.2% up to 9.0% for Cursor CLI · Grok 4.5), linking to the
+review. The Hub records only the size of the deduction, not which trials
+were flagged, so those trials still count as passes in the cells. Affected
+submissions get a ⚑ marker linking to the review, and the scores shown are
+the official, post-deduction ones.
 
 ## Usage
 
@@ -71,7 +83,10 @@ Build only some versions, or re-download cached registry datasets:
     uv run tbv build --only 4.0
     uv run tbv build --refresh
 
-No Harbor login is needed; everything used is publicly readable. Binary
+No Harbor login is needed; everything used is publicly readable. The Hub's
+leaderboard endpoint intermittently returns server errors for some boards
+(notably 2.1), so reads are retried for about 30 seconds before the build
+fails; a failed deploy leaves the previous site live. Binary
 files and text files over 200 KB are listed but not inlined.
 
 ## Adding a Version
