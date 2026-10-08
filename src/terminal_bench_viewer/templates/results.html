@@ -8,6 +8,15 @@
     Each cell shows how many trials passed (usually out of 5); errored trials count as failures.
     Columns are ordered by leaderboard rank, and rows start with the hardest tasks.
   </p>
+  {% set hacked = ed.subs|selectattr("hacks")|list %}
+  {% if hacked %}
+  <p class="note">
+    <span class="hack">⚑</span> {{ hacked|length }} submission{{ "s" if hacked|length > 1 }}
+    had trials judged reward hacks (gaming the tests rather than solving the task).
+    The leaderboard deducts these from the score shown in the column header, but doesn't say which trials they were,
+    so they still count as passes in the cells below.
+  </p>
+  {% endif %}
 </section>
 
 <section class="filters">
@@ -39,8 +48,8 @@
       <th class="task">Task</th>
       <th class="solve num" title="Mean pass rate across submissions">Solve</th>
       {% for s in ed.subs %}
-      <th class="sub" data-col="{{ loop.index0 }}" title="#{{ s.rank }} {{ s.label }}: {{ '%.1f'|format(s.accuracy) }}%">
-        <span><b>{{ "%.0f"|format(s.accuracy) }}</b> {{ s.label }}</span>
+      <th class="sub" data-col="{{ loop.index0 }}" title="#{{ s.rank }} {{ s.label }}: {{ '%.1f'|format(s.accuracy) }}%{% if s.hacks %} after a {{ '%.1f'|format(s.hacks) }}% reward-hack deduction{% endif %}">
+        <span><b>{{ "%.0f"|format(s.accuracy) }}</b>{% if s.hacks %} {% if s.hacks_url %}<a class="hack" href="{{ s.hacks_url }}">⚑</a>{% else %}<span class="hack">⚑</span>{% endif %}{% endif %} {{ s.label }}</span>
       </th>
       {% endfor %}
     </tr>
@@ -66,6 +75,7 @@
 {% block scripts %}
 <script>
   const SUBS = {{ ed.subs|map(attribute="label")|list|tojson }};
+  const HACKS = {{ ed.subs|map(attribute="hacks")|list|tojson }};
 </script>
 <script src="{{ root }}/static/results.js"></script>
 {% endblock %}

@@ -33,8 +33,8 @@ class Benchmark:
                 check=True,
                 stdout=subprocess.DEVNULL,
             )
-        # harbor nests tasks under the dataset's org name
-        return dest / self.dataset.split("/", 1)[0]
+        # harbor nests tasks under the dataset's name
+        return dest / self.dataset.split("/", 1)[1].split("@", 1)[0]
 
 
 BENCHMARKS = [
@@ -51,6 +51,14 @@ BENCHMARKS = [
         source_url="https://hub.harborframework.com/datasets/terminal-bench/terminal-bench",
         dataset="terminal-bench/terminal-bench@3.0.0",
         leaderboard=("terminal-bench/terminal-bench", "3-0-0"),
+    ),
+    Benchmark(
+        slug="2.1",
+        title="Terminal-Bench 2.1",
+        source_url="https://github.com/harbor-framework/terminal-bench-2-1",
+        # revision 6 is the latest; the leaderboard accepts runs on any revision
+        dataset="terminal-bench/terminal-bench-2-1@6",
+        leaderboard=("terminal-bench/terminal-bench-2-1", "main"),
     ),
     Benchmark(
         slug="2.0",

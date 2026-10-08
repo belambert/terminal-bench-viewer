@@ -242,3 +242,8 @@ table.results td { padding: 6px 8px; }
 .passed { white-space: nowrap; font-family: var(--mono); font-size: 14px; }
 .passed .c { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 table.results td a { font-family: var(--sans); font-weight: 500; }
+
+/* reward-hack markers */
+.hack { color: var(--medium); text-decoration: none; }
+a.hack:hover { text-decoration: none; opacity: 0.8; }
+.note { font-size: 14px; color: var(--muted); border-left: 3px solid var(--medium); padding: 4px 12px; margin: 12px 0 0; }
