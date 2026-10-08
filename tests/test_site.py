@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from terminal_bench_viewer.benchmarks import Benchmark
-from terminal_bench_viewer.results import Cell, Submission, solve_rates
+from terminal_bench_viewer.results import Cell, Submission, solve_rates, tally
 from terminal_bench_viewer.site import Edition, build_site, level
 from terminal_bench_viewer.tasks import load_tasks
 
@@ -121,6 +121,17 @@ def test_level():
     assert level(Cell(5, 1)) == 1
     assert level(Cell(10, 1)) == 1  # a single pass never rounds down to zero
     assert level(Cell(5, 5)) == 5
+
+
+def test_tally():
+    trials = [
+        {"task_name": "tb/a", "rewards": {"reward": 1.0}},
+        {"task_name": "tb/a", "rewards": {"reward": 0.23}},  # partial credit passes
+        {"task_name": "tb/a", "rewards": {"reward": 0.0}},
+        {"task_name": "tb/a", "rewards": None},  # errored
+        {"task_name": "tb/b", "rewards": {"reward": 0}},
+    ]
+    assert tally(trials) == {"a": Cell(4, 2), "b": Cell(1, 0)}
 
 
 def test_solve_rates():
