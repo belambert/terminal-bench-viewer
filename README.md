@@ -13,6 +13,7 @@ It currently covers:
 | Version | Tasks from                                                                         | Per-task results from                 |
 |---------|------------------------------------------------------------------------------------|---------------------------------------|
 | 4.0     | Harbor registry (`terminal-bench/terminal-bench@4.0.0`)                            | Harbor Hub leaderboard `4-0-0`        |
+| 3.0     | Harbor registry (`terminal-bench/terminal-bench@3.0.0`)                            | Harbor Hub leaderboard `3-0-0`        |
 | 2.0     | [GitHub](https://github.com/laude-institute/terminal-bench-2)                      | not yet                               |
 
 For each version the site has:
@@ -39,13 +40,15 @@ Results come from the public Harbor Hub leaderboard. Each leaderboard row
 (an agent, model, and reasoning-effort combination) lists the trials it was
 scored on; the viewer reads each trial's task and reward. A cell is the
 number of passing trials for that task, out of the trials run (5 for every
-4.0 submission). Errored trials have no reward and count as failures, as on
-the leaderboard. A task's solve rate is the mean reward across all trials of
-all submissions.
+3.0 and 4.0 submission). A trial passes if its reward is above zero: a few
+tasks give partial credit, and counting those as passes is what reproduces
+the official accuracy. Errored trials have no reward and count as failures,
+as on the leaderboard. A task's solve rate is the share of passing trials
+across all submissions.
 
-These per-trial totals match the official accuracy for every 4.0 row except
-Claude Code · Opus 5 (max), where they come to 52.4% against an official
-51.8%; the leaderboard figure may include a manual rescore.
+These counts match the official accuracy for every 3.0 and 4.0 row except
+4.0's Claude Code · Opus 5 (max), where they come to 52.4% against an
+official 51.8%; the leaderboard figure may include a manual rescore.
 
 ## Usage
 
@@ -77,6 +80,10 @@ Versions are defined in `BENCHMARKS` in
 `src/terminal_bench_viewer/benchmarks.py`. Each one names where its tasks
 come from (a git repo or a Harbor registry dataset) and, optionally, the
 Harbor Hub leaderboard to pull results from.
+
+Harbor is pinned to an exact version because the results code uses its
+internal Python client, which can change between releases. When upgrading,
+run a full build and check the scores still match the leaderboard.
 
 ## Deployment
 
