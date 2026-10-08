@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{% block title %}{{ task.name }} · Terminal-Bench Viewer{% endblock %}
+{% block title %}{{ task.name }} · {{ ed.bench.title }} · Terminal-Bench Viewer{% endblock %}
 {% block content %}
+{% set rate = ed.rates.get(task.name) %}
 <nav class="pager">
   <a href="../index.html">← all tasks</a>
   <span>
@@ -10,24 +11,64 @@
 </nav>
 
 <h1>{{ task.name }}</h1>
-<p class="lede">{{ task.description }}</p>
+{% if task.description %}<p class="lede">{{ task.description }}</p>{% endif %}
 
 <dl class="meta">
-  <div><dt>Difficulty</dt><dd><span class="badge {{ task.difficulty }}">{{ task.difficulty }}</span></dd></div>
-  <div><dt>Category</dt><dd>{{ task.category }}</dd></div>
+  {% if task.difficulty %}<div><dt>Difficulty</dt><dd><span class="badge {{ task.difficulty }}">{{ task.difficulty }}</span></dd></div>{% endif %}
+  {% if rate is not none %}<div><dt>Solve rate</dt><dd><a href="#results">{{ rate|pct }}</a> of trials</dd></div>{% endif %}
+  <div><dt>Category</dt><dd>{{ task.category }}{% if task.subcategory %} / {{ task.subcategory }}{% endif %}</dd></div>
   {% if task.tags %}<div><dt>Tags</dt><dd>{% for tag in task.tags %}<span class="tag">{{ tag }}</span>{% endfor %}</dd></div>{% endif %}
   <div><dt>Author</dt><dd>{{ task.authors|join(", ") }}</dd></div>
-  {% if task.expert_min %}<div><dt>Expert / junior</dt><dd>{{ task.expert_min|int }} / {{ task.junior_min|int }} min</dd></div>{% endif %}
+  {% if task.expert_min %}<div><dt>Expert{% if task.junior_min %} / junior{% endif %}</dt><dd>
+    {% if task.expert_min >= 120 %}{{ "%g"|format(task.expert_min / 60) }} h{% else %}{{ task.expert_min|int }}{% if task.junior_min %} / {{ task.junior_min|int }}{% endif %} min{% endif %}
+  </dd></div>{% endif %}
   {% if task.agent_timeout_sec %}<div><dt>Agent timeout</dt><dd>{{ (task.agent_timeout_sec / 60)|round|int }} min</dd></div>{% endif %}
-  {% if task.env.cpus %}<div><dt>Resources</dt><dd>{{ task.env.cpus }} CPU · {{ (task.env.memory_mb or 0)|int // 1024 }} GB RAM{% if task.env.gpus %} · {{ task.env.gpus }} GPU{% endif %}</dd></div>{% endif %}
+  {% if task.env.cpus %}<div><dt>Resources</dt><dd>{{ task.env.cpus }} CPU · {{ "%g"|format((task.env.memory_mb or 0) / 1024) }} GB RAM{% if task.env.gpus %} · {{ task.env.gpus }} GPU{% endif %}</dd></div>{% endif %}
   {% if task.env.allow_internet is defined %}<div><dt>Internet</dt><dd>{{ "allowed" if task.env.allow_internet else "blocked" }}</dd></div>{% endif %}
-  <div><dt>Source</dt><dd><a href="{{ source_url(task.name) }}">GitHub</a></dd></div>
+  {% set src = ed.source_url(task.name) %}
+  {% if src %}<div><dt>Source</dt><dd><a href="{{ src }}">GitHub</a></dd></div>{% endif %}
 </dl>
 
 <section>
   <h2>Instruction</h2>
   <div class="instruction prose">{{ task.instruction|md|safe }}</div>
 </section>
+
+{% for heading, text in task.notes.items() %}
+<section>
+  <h2>{{ heading }}</h2>
+  <div class="prose">{{ text|md|safe }}</div>
+</section>
+{% endfor %}
+
+{% if ed.subs %}
+<section id="results">
+  <h2>Results</h2>
+  <p class="muted">Trials passed per official leaderboard submission, in leaderboard order. <a href="../results.html">All tasks →</a></p>
+  <div class="table-wrap">
+  <table class="results">
+    <thead><tr><th class="num">#</th><th>Agent</th><th>Model</th><th>Effort</th><th>Passed</th></tr></thead>
+    <tbody>
+    {% for s in ed.subs %}
+      {% set c = s.cells.get(task.name) %}
+      <tr>
+        <td class="num muted">{{ s.rank or "" }}</td>
+        <td>{% if s.agent_url %}<a href="{{ s.agent_url }}">{{ s.agent }}</a>{% else %}{{ s.agent }}{% endif %}</td>
+        <td>{% if s.model_url %}<a href="{{ s.model_url }}">{{ s.model }}</a>{% else %}{{ s.model }}{% endif %}</td>
+        <td class="muted">{{ s.effort if s.effort and s.effort != "none" else "" }}</td>
+        <td class="passed">
+          {% if c %}
+          <span class="c l{{ c|level }}" aria-hidden="true"></span>
+          {{ "%g"|format(c.passed) }}/{{ c.n }}
+          {% else %}<span class="muted">not run</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
 
 {% if task.readme %}
 <section>
@@ -44,16 +85,17 @@
 <section>
   <h2>{{ section|capitalize if section != "other" else "Other files" }}</h2>
   {% for f in fs %}
+  {% set url = ed.source_url(task.name, f.path) %}
   <details class="file" {% if loop.length == 1 or f.path.endswith(("Dockerfile", "solve.sh", "test.sh")) %}open{% endif %}>
     <summary>
       <code>{{ f.path }}</code>
       <span class="muted">{{ f.size|size }}</span>
-      <a class="raw" href="{{ source_url(task.name, f.path) }}">GitHub ↗</a>
+      {% if url %}<a class="raw" href="{{ url }}">GitHub ↗</a>{% endif %}
     </summary>
     {% if f.text is not none %}
     {{ f|code|safe }}
     {% else %}
-    <p class="muted binary">Binary or large file not shown. <a href="{{ source_url(task.name, f.path) }}">View on GitHub</a>.</p>
+    <p class="muted binary">Binary or large file not shown.{% if url %} <a href="{{ url }}">View on GitHub</a>.{% endif %}</p>
     {% endif %}
   </details>
   {% endfor %}

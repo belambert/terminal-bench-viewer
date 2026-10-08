@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="intro">
+  <h1>Terminal-Bench</h1>
+  <p>Browse the tasks in each version of the Terminal-Bench benchmark, and see how official leaderboard submissions did on each one.</p>
+</section>
+
+<div class="cards">
+{% for ed in editions %}
+  <a class="card" href="{{ ed.bench.slug }}/index.html">
+    <h2>{{ ed.bench.title }}</h2>
+    <p class="muted">
+      {{ ed.tasks|length }} tasks
+      {% if ed.subs %} · {{ ed.subs|length }} submissions · top score {{ "%.1f"|format(ed.subs[0].accuracy) }}%{% endif %}
+    </p>
+    {% if ed.subs %}<p class="muted">Leader: {{ ed.subs[0].label }}</p>{% endif %}
+  </a>
+{% endfor %}
+</div>
+{% endblock %}

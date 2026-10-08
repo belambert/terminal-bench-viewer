@@ -1,15 +1,14 @@
 """Command-line interface for building the site."""
 
-import subprocess
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
-from terminal_bench_viewer.site import build_site
+from terminal_bench_viewer.benchmarks import BENCHMARKS, git_head
+from terminal_bench_viewer.results import fetch_leaderboard
+from terminal_bench_viewer.site import Edition, build_site
 from terminal_bench_viewer.tasks import load_tasks
-
-REPO_URL = "https://github.com/laude-institute/terminal-bench-2"
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 
@@ -21,37 +20,31 @@ def main() -> None:
 
 @app.command()
 def build(
-    src: Annotated[
-        Path | None,
-        typer.Option(help="Local benchmark checkout; cloned into --cache if omitted."),
-    ] = None,
     out: Annotated[Path, typer.Option(help="Output directory.")] = Path("site"),
-    cache: Annotated[Path, typer.Option(help="Clone location.")] = Path(".cache/tb2"),
-    repo: Annotated[str, typer.Option(help="Benchmark git repo.")] = REPO_URL,
+    cache: Annotated[Path, typer.Option(help="Task download dir.")] = Path(".cache"),
+    only: Annotated[
+        list[str] | None,
+        typer.Option(help="Benchmark version(s) to build, e.g. 4.0. Default: all."),
+    ] = None,
+    refresh: Annotated[
+        bool, typer.Option(help="Re-download registry datasets.")
+    ] = False,
 ) -> None:
-    """Generate the static site."""
-    if src is None:
-        src = cache
-        _sync(repo, src)
+    """Fetch tasks and results, then generate the static site."""
+    benches = [b for b in BENCHMARKS if not only or b.slug in only]
+    if not benches:
+        raise typer.BadParameter(f"unknown version(s): {only}")
 
-    tasks = load_tasks(src)
-    if not tasks:
-        raise typer.BadParameter(f"no tasks (*/task.toml) found in {src}")
+    editions = []
+    for b in benches:
+        src = b.fetch_tasks(cache, refresh)
+        tasks = load_tasks(src)
+        if not tasks:
+            raise typer.BadParameter(f"no tasks (*/task.toml) found in {src}")
+        subs = fetch_leaderboard(*b.leaderboard) if b.leaderboard else []
+        commit = git_head(src) if b.git_url else None
+        editions.append(Edition(b, tasks, subs, commit))
+        typer.echo(f"{b.title}: {len(tasks)} tasks, {len(subs)} submissions")
 
-    build_site(tasks, out, repo_url=repo, commit=_head(src))
-    typer.echo(f"built {len(tasks)} tasks -> {out}/index.html")
-
-
-def _sync(repo: str, dest: Path) -> None:
-    if (dest / ".git").exists():
-        subprocess.run(["git", "-C", dest, "pull", "--ff-only", "-q"], check=True)
-    else:
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "clone", "-q", "--depth", "1", repo, dest], check=True)
-
-
-def _head(src: Path) -> str | None:
-    r = subprocess.run(
-        ["git", "-C", src, "rev-parse", "HEAD"], capture_output=True, text=True
-    )
-    return r.stdout.strip() if r.returncode == 0 else None
+    build_site(editions, out)
+    typer.echo(f"built -> {out}/index.html")

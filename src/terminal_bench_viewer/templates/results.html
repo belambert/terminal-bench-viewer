@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Results · {{ ed.bench.title }} · Terminal-Bench Viewer{% endblock %}
+{% block content %}
+<section class="intro">
+  <h1>{{ ed.bench.title }} results</h1>
+  <p>
+    How each of the {{ ed.subs|length }} official leaderboard submissions did on each task.
+    Each cell shows how many trials passed (usually out of 5); errored trials count as failures.
+    Columns are ordered by leaderboard rank, and rows start with the hardest tasks.
+  </p>
+</section>
+
+<section class="filters">
+  <input id="q" type="search" placeholder="Filter tasks…">
+  <select id="category">
+    <option value="">All categories</option>
+  {% for c, n in ed.categories %}
+    <option value="{{ c }}">{{ c }} ({{ n }})</option>
+  {% endfor %}
+  </select>
+  <select id="sort">
+    <option value="hard">Hardest first</option>
+    <option value="easy">Easiest first</option>
+    <option value="name">By name</option>
+  </select>
+  <label class="check"><input id="counts" type="checkbox"> Show counts</label>
+  <span class="legend" aria-label="Legend: trials passed">
+    <span class="muted">passed</span>
+    <span class="c l0">none</span>
+    {% for i in range(1, 6) %}<span class="c l{{ i }}"></span>{% endfor %}
+    <span class="muted">all</span>
+  </span>
+</section>
+
+<div class="heat-wrap">
+<table id="heat" class="heat">
+  <thead>
+    <tr>
+      <th class="task">Task</th>
+      <th class="solve num" title="Mean pass rate across submissions">Solve</th>
+      {% for s in ed.subs %}
+      <th class="sub" data-col="{{ loop.index0 }}" title="#{{ s.rank }} {{ s.label }}: {{ '%.1f'|format(s.accuracy) }}%">
+        <span><b>{{ "%.0f"|format(s.accuracy) }}</b> {{ s.label }}</span>
+      </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for t in ed.hardest_first() %}
+    {% set rate = ed.rates.get(t.name, 0) %}
+    <tr data-name="{{ t.name }}" data-category="{{ t.category }}" data-solve="{{ rate }}">
+      <th class="task"><a href="tasks/{{ t.name }}.html">{{ t.name }}</a></th>
+      <td class="solve num">{{ rate|pct }}</td>
+      {% for s in ed.subs %}
+      {% set c = s.cells.get(t.name) %}
+      {% set lv = c|level %}
+      <td class="c {{ 'l' ~ lv if lv is not none else 'na' }}" data-col="{{ loop.index0 }}">{% if c %}{{ "%g"|format(c.passed) }}/{{ c.n }}{% endif %}</td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div id="tip" class="tip" hidden></div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const SUBS = {{ ed.subs|map(attribute="label")|list|tojson }};
+</script>
+<script src="{{ root }}/static/results.js"></script>
+{% endblock %}

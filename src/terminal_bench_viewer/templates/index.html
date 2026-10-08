@@ -1,28 +1,36 @@
 {% extends "base.html" %}
+{% block title %}{{ ed.bench.title }} · Terminal-Bench Viewer{% endblock %}
 {% block content %}
 <section class="intro">
-  <h1>Terminal-Bench 2.0</h1>
-  <p>{{ tasks|length }} tasks for evaluating agents in containerized terminal environments.</p>
+  <h1>{{ ed.bench.title }}</h1>
+  <p>
+    {{ ed.tasks|length }} tasks for evaluating agents in containerized terminal environments.
+    {% if ed.subs %}<a href="results.html">See which of the {{ ed.subs|length }} leaderboard submissions solve each task →</a>{% endif %}
+  </p>
+  {% if ed.difficulties %}
   <div class="stats">
-{% for d, n in stats.difficulty %}
+  {% for d, n in ed.difficulties %}
     <span class="badge {{ d }}">{{ d }} · {{ n }}</span>
-{% endfor %}
+  {% endfor %}
   </div>
+  {% endif %}
 </section>
 
 <section class="filters">
   <input id="q" type="search" placeholder="Search name, description, tags…" autofocus>
+  {% if ed.difficulties %}
   <select id="difficulty">
     <option value="">All difficulties</option>
-{% for d, n in stats.difficulty %}
+  {% for d, n in ed.difficulties %}
     <option value="{{ d }}">{{ d }} ({{ n }})</option>
-{% endfor %}
+  {% endfor %}
   </select>
+  {% endif %}
   <select id="category">
     <option value="">All categories</option>
-{% for c, n in stats.category %}
+  {% for c, n in ed.categories %}
     <option value="{{ c }}">{{ c }} ({{ n }})</option>
-{% endfor %}
+  {% endfor %}
   </select>
   <span id="count" class="muted"></span>
 </section>
@@ -33,22 +41,33 @@
     <tr>
       <th data-sort="name">Task</th>
       <th data-sort="category">Category</th>
-      <th data-sort="difficulty">Difficulty</th>
+      {% if ed.difficulties %}<th data-sort="difficulty">Difficulty</th>{% endif %}
+      {% if ed.subs %}<th data-sort="solve" class="num" title="Mean pass rate across leaderboard submissions">Solve rate</th>{% endif %}
       <th data-sort="expert" class="num">Expert time</th>
     </tr>
   </thead>
   <tbody>
-{% for t in tasks %}
+{% for t in ed.tasks %}
+  {% set rate = ed.rates.get(t.name) %}
     <tr data-name="{{ t.name }}" data-category="{{ t.category }}"
-        data-difficulty="{{ t.difficulty }}" data-expert="{{ t.expert_min or '' }}"
-        data-text="{{ [t.name, t.description, t.category, t.tags|join(' '), t.authors|join(' ')]|join(' ')|lower }}">
+        data-difficulty="{{ t.difficulty or '' }}" data-expert="{{ t.expert_min or '' }}"
+        data-solve="{{ rate if rate is not none else '' }}"
+        data-text="{{ [t.name, t.summary, t.category, t.subcategory or '', t.tags|join(' '), t.authors|join(' ')]|join(' ')|lower }}">
       <td>
         <a href="tasks/{{ t.name }}.html">{{ t.name }}</a>
-        <div class="desc">{{ t.description }}</div>
+        <div class="desc">{{ t.summary }}</div>
       </td>
-      <td>{{ t.category }}</td>
-      <td><span class="badge {{ t.difficulty }}">{{ t.difficulty }}</span></td>
-      <td class="num">{% if t.expert_min %}{{ t.expert_min|int }} min{% endif %}</td>
+      <td>{{ t.category }}{% if t.subcategory %}<div class="desc">{{ t.subcategory }}</div>{% endif %}</td>
+      {% if ed.difficulties %}<td>{% if t.difficulty %}<span class="badge {{ t.difficulty }}">{{ t.difficulty }}</span>{% endif %}</td>{% endif %}
+      {% if ed.subs %}
+      <td class="num">
+        {% if rate is not none %}
+        <span class="meter"><span style="width: {{ (rate * 100)|round(1) }}%"></span></span>
+        {{ rate|pct }}
+        {% endif %}
+      </td>
+      {% endif %}
+      <td class="num">{% if t.expert_min %}{{ "%.0f"|format(t.expert_min / 60) ~ " h" if t.expert_min >= 120 else "%.0f"|format(t.expert_min) ~ " min" }}{% endif %}</td>
     </tr>
 {% endfor %}
   </tbody>
@@ -56,5 +75,5 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="static/index.js"></script>
+<script src="{{ root }}/static/index.js"></script>
 {% endblock %}

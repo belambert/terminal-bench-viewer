@@ -5,14 +5,18 @@ const rows = [...tbody.rows];
 const rank = { easy: 0, medium: 1, hard: 2 };
 const params = new URLSearchParams(location.search);
 
+// difficulty filter only exists for versions that rate difficulty
+const val = (id) => $(id)?.value ?? "";
+
 for (const id of ["q", "difficulty", "category"]) {
+  if (!$(id)) continue;
   if (params.has(id)) $(id).value = params.get(id);
   $(id).addEventListener("input", filter);
 }
 
 function filter() {
   const q = $("q").value.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const d = $("difficulty").value, c = $("category").value;
+  const d = val("difficulty"), c = val("category");
   let n = 0;
   for (const r of rows) {
     const show =
@@ -38,11 +42,11 @@ for (const th of document.querySelectorAll("th[data-sort]")) {
     const k = th.dataset.sort;
     asc = sortKey === k ? !asc : true;
     sortKey = k;
-    const val = (r) =>
+    const key = (r) =>
       k === "difficulty" ? rank[r.dataset.difficulty] ?? 9
-      : k === "expert" ? parseFloat(r.dataset.expert) || Infinity
+      : k === "expert" || k === "solve" ? (r.dataset[k] ? +r.dataset[k] : Infinity)
       : r.dataset[k];
-    rows.sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * (asc ? 1 : -1));
+    rows.sort((a, b) => (key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0) * (asc ? 1 : -1));
     tbody.append(...rows);
     document.querySelectorAll("th").forEach((h) => h.removeAttribute("aria-sort"));
     th.setAttribute("aria-sort", asc ? "ascending" : "descending");

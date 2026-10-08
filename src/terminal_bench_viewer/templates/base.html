@@ -10,7 +10,15 @@
 <body>
   <header class="top">
     <a class="brand" href="{{ root }}/index.html"><span class="prompt">$</span> terminal-bench</a>
-    <a class="src" href="{{ repo_url }}{% if commit %}/tree/{{ commit }}{% endif %}">source{% if commit %} @ {{ commit[:7] }}{% endif %}</a>
+    {% if ed %}
+    {% set base = root ~ "/" ~ ed.bench.slug %}
+    <nav>
+      <span class="ver">{{ ed.bench.slug }}</span>
+      <a href="{{ base }}/index.html">tasks</a>
+      {% if ed.subs %}<a href="{{ base }}/results.html">results</a>{% endif %}
+      <a class="src" href="{{ ed.bench.source_url }}{% if ed.commit %}/tree/{{ ed.commit }}{% endif %}">source{% if ed.commit %} @ {{ ed.commit[:7] }}{% endif %}</a>
+    </nav>
+    {% endif %}
   </header>
   <main>
 {% block content %}{% endblock %}
