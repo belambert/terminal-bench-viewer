@@ -1,0 +1,32 @@
+[project]
+name = "terminal-bench-viewer"
+version = "0.1.0"
+description = "Static, browsable website for the Terminal-Bench benchmark."
+readme = "README.md"
+authors = [
+    { name = "Ben Lambert", email = "blambert@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "jinja2>=3.1.6",
+    "markdown-it-py>=4.2.0",
+    "pygments>=2.21.0",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+tbv = "terminal_bench_viewer.cli:app"
+
+[build-system]
+requires = ["uv_build>=0.9.3,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "black>=26.10.0",
+    "isort>=9.0.2",
+    "pytest>=9.1.1",
+]
+
+[tool.isort]
+profile = "black"

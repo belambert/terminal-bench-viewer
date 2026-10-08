@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Terminal-Bench Viewer{% endblock %}</title>
+  <link rel="stylesheet" href="{{ root }}/static/style.css">
+  <link rel="stylesheet" href="{{ root }}/static/pygments.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="{{ root }}/index.html"><span class="prompt">$</span> terminal-bench</a>
+    <a class="src" href="{{ repo_url }}{% if commit %}/tree/{{ commit }}{% endif %}">source{% if commit %} @ {{ commit[:7] }}{% endif %}</a>
+  </header>
+  <main>
+{% block content %}{% endblock %}
+  </main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ task.name }} · Terminal-Bench Viewer{% endblock %}
+{% block content %}
+<nav class="pager">
+  <a href="../index.html">← all tasks</a>
+  <span>
+    {% if prev %}<a href="{{ prev.name }}.html" title="{{ prev.name }}">‹ prev</a>{% endif %}
+    {% if next %}<a href="{{ next.name }}.html" title="{{ next.name }}">next ›</a>{% endif %}
+  </span>
+</nav>
+
+<h1>{{ task.name }}</h1>
+<p class="lede">{{ task.description }}</p>
+
+<dl class="meta">
+  <div><dt>Difficulty</dt><dd><span class="badge {{ task.difficulty }}">{{ task.difficulty }}</span></dd></div>
+  <div><dt>Category</dt><dd>{{ task.category }}</dd></div>
+  {% if task.tags %}<div><dt>Tags</dt><dd>{% for tag in task.tags %}<span class="tag">{{ tag }}</span>{% endfor %}</dd></div>{% endif %}
+  <div><dt>Author</dt><dd>{{ task.authors|join(", ") }}</dd></div>
+  {% if task.expert_min %}<div><dt>Expert / junior</dt><dd>{{ task.expert_min|int }} / {{ task.junior_min|int }} min</dd></div>{% endif %}
+  {% if task.agent_timeout_sec %}<div><dt>Agent timeout</dt><dd>{{ (task.agent_timeout_sec / 60)|round|int }} min</dd></div>{% endif %}
+  {% if task.env.cpus %}<div><dt>Resources</dt><dd>{{ task.env.cpus }} CPU · {{ (task.env.memory_mb or 0)|int // 1024 }} GB RAM{% if task.env.gpus %} · {{ task.env.gpus }} GPU{% endif %}</dd></div>{% endif %}
+  {% if task.env.allow_internet is defined %}<div><dt>Internet</dt><dd>{{ "allowed" if task.env.allow_internet else "blocked" }}</dd></div>{% endif %}
+  <div><dt>Source</dt><dd><a href="{{ source_url(task.name) }}">GitHub</a></dd></div>
+</dl>
+
+<section>
+  <h2>Instruction</h2>
+  <div class="instruction prose">{{ task.instruction|md|safe }}</div>
+</section>
+
+{% if task.readme %}
+<section>
+  <details class="readme">
+    <summary><h2>Task README</h2></summary>
+    <div class="prose">{{ task.readme|md|safe }}</div>
+  </details>
+</section>
+{% endif %}
+
+{% for section in sections + ("other",) %}
+{% set fs = task.files_in(section) %}
+{% if fs %}
+<section>
+  <h2>{{ section|capitalize if section != "other" else "Other files" }}</h2>
+  {% for f in fs %}
+  <details class="file" {% if loop.length == 1 or f.path.endswith(("Dockerfile", "solve.sh", "test.sh")) %}open{% endif %}>
+    <summary>
+      <code>{{ f.path }}</code>
+      <span class="muted">{{ f.size|size }}</span>
+      <a class="raw" href="{{ source_url(task.name, f.path) }}">GitHub ↗</a>
+    </summary>
+    {% if f.text is not none %}
+    {{ f|code|safe }}
+    {% else %}
+    <p class="muted binary">Binary or large file not shown. <a href="{{ source_url(task.name, f.path) }}">View on GitHub</a>.</p>
+    {% endif %}
+  </details>
+  {% endfor %}
+</section>
+{% endif %}
+{% endfor %}
+{% endblock %}

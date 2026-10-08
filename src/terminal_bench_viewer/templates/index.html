@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="intro">
+  <h1>Terminal-Bench 2.0</h1>
+  <p>{{ tasks|length }} tasks for evaluating agents in containerized terminal environments.</p>
+  <div class="stats">
+{% for d, n in stats.difficulty %}
+    <span class="badge {{ d }}">{{ d }} · {{ n }}</span>
+{% endfor %}
+  </div>
+</section>
+
+<section class="filters">
+  <input id="q" type="search" placeholder="Search name, description, tags…" autofocus>
+  <select id="difficulty">
+    <option value="">All difficulties</option>
+{% for d, n in stats.difficulty %}
+    <option value="{{ d }}">{{ d }} ({{ n }})</option>
+{% endfor %}
+  </select>
+  <select id="category">
+    <option value="">All categories</option>
+{% for c, n in stats.category %}
+    <option value="{{ c }}">{{ c }} ({{ n }})</option>
+{% endfor %}
+  </select>
+  <span id="count" class="muted"></span>
+</section>
+
+<div class="table-wrap">
+<table id="tasks">
+  <thead>
+    <tr>
+      <th data-sort="name">Task</th>
+      <th data-sort="category">Category</th>
+      <th data-sort="difficulty">Difficulty</th>
+      <th data-sort="expert" class="num">Expert time</th>
+    </tr>
+  </thead>
+  <tbody>
+{% for t in tasks %}
+    <tr data-name="{{ t.name }}" data-category="{{ t.category }}"
+        data-difficulty="{{ t.difficulty }}" data-expert="{{ t.expert_min or '' }}"
+        data-text="{{ [t.name, t.description, t.category, t.tags|join(' '), t.authors|join(' ')]|join(' ')|lower }}">
+      <td>
+        <a href="tasks/{{ t.name }}.html">{{ t.name }}</a>
+        <div class="desc">{{ t.description }}</div>
+      </td>
+      <td>{{ t.category }}</td>
+      <td><span class="badge {{ t.difficulty }}">{{ t.difficulty }}</span></td>
+      <td class="num">{% if t.expert_min %}{{ t.expert_min|int }} min{% endif %}</td>
+    </tr>
+{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="static/index.js"></script>
+{% endblock %}
