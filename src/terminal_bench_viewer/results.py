@@ -14,7 +14,7 @@ CONCURRENCY = 8
 @dataclass
 class Cell:
     n: int = 0
-    passed: float = 0.0  # sum of rewards
+    passed: int = 0
 
     @property
     def rate(self) -> float:
@@ -56,16 +56,25 @@ async def _fetch(package: str, name: str) -> list[Submission]:
 
     async def fill(s: Submission) -> None:
         async with limit:
-            trials = await _row_trials(client, s.id)
-        for trial in trials:
-            task = trial.get("task_name", "").rsplit("/", 1)[-1]
-            cell = s.cells.setdefault(task, Cell())
-            cell.n += 1
-            # errored trials have no reward and count as failures
-            cell.passed += (trial.get("rewards") or {}).get("reward") or 0.0
+            s.cells = tally(await _row_trials(client, s.id))
 
     await asyncio.gather(*(fill(s) for s in subs.values()))
     return sorted(subs.values(), key=lambda s: (s.rank or 1_000_000, -s.accuracy))
+
+
+def tally(trials: list[dict]) -> dict[str, Cell]:
+    """Count trials and passes per task from Hub trial records."""
+    cells: dict[str, Cell] = {}
+    for trial in trials:
+        task = trial.get("task_name", "").rsplit("/", 1)[-1]
+        cell = cells.setdefault(task, Cell())
+        cell.n += 1
+        # any positive reward is a pass (some tasks give partial credit),
+        # which reproduces the official accuracy; errored trials have no
+        # reward and count as failures
+        reward = (trial.get("rewards") or {}).get("reward") or 0
+        cell.passed += reward > 0
+    return cells
 
 
 async def _row_trials(client, row_id: str) -> list[dict]:
@@ -113,7 +122,7 @@ def _display(v: dict | str | None) -> tuple[str | None, str | None]:
 
 def solve_rates(subs: list[Submission]) -> dict[str, float]:
     """Mean pass rate per task across all submissions."""
-    totals: dict[str, list[float]] = defaultdict(lambda: [0.0, 0])
+    totals: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     for s in subs:
         for task, c in s.cells.items():
             totals[task][0] += c.passed

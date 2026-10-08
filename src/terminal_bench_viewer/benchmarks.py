@@ -46,6 +46,13 @@ BENCHMARKS = [
         leaderboard=("terminal-bench/terminal-bench", "4-0-0"),
     ),
     Benchmark(
+        slug="3.0",
+        title="Terminal-Bench 3.0",
+        source_url="https://hub.harborframework.com/datasets/terminal-bench/terminal-bench",
+        dataset="terminal-bench/terminal-bench@3.0.0",
+        leaderboard=("terminal-bench/terminal-bench", "3-0-0"),
+    ),
+    Benchmark(
         slug="2.0",
         title="Terminal-Bench 2.0",
         source_url="https://github.com/laude-institute/terminal-bench-2",

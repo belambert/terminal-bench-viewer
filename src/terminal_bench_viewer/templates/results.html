@@ -54,7 +54,7 @@
       {% for s in ed.subs %}
       {% set c = s.cells.get(t.name) %}
       {% set lv = c|level %}
-      <td class="c {{ 'l' ~ lv if lv is not none else 'na' }}" data-col="{{ loop.index0 }}">{% if c %}{{ "%g"|format(c.passed) }}/{{ c.n }}{% endif %}</td>
+      <td class="c {{ 'l' ~ lv if lv is not none else 'na' }}" data-col="{{ loop.index0 }}">{% if c %}{{ c.passed }}/{{ c.n }}{% endif %}</td>
       {% endfor %}
     </tr>
   {% endfor %}

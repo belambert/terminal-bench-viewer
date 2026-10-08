@@ -59,7 +59,7 @@
         <td class="passed">
           {% if c %}
           <span class="c l{{ c|level }}" aria-hidden="true"></span>
-          {{ "%g"|format(c.passed) }}/{{ c.n }}
+          {{ c.passed }}/{{ c.n }}
           {% else %}<span class="muted">not run</span>{% endif %}
         </td>
       </tr>
